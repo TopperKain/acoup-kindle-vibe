@@ -18,3 +18,11 @@ export async function fetchWithTimeout(url: string, init?: RequestInit): Promise
   }
   return await res.text();
 }
+
+export async function fetchJsonWithTimeout<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    throw new Error(`Upstream responded ${res.status}`);
+  }
+  return (await res.json()) as T;
+}

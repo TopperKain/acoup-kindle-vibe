@@ -8,6 +8,12 @@ app.get('/healthz', (_req: Request, res: Response) => {
   res.type('text/plain').send('ok');
 });
 
+// Default route: go to ACOUP homepage via internal renderer
+app.get('/', (_req: Request, res: Response) => {
+  const homepage = 'https://acoup.blog/';
+  res.redirect(302, `/render?url=${encodeURIComponent(homepage)}`);
+});
+
 app.get('/render', renderRouteHandler);
 
 // Fallback 404

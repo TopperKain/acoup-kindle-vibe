@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { isValidAcoupUrl, fetchWithTimeout } from './utils';
-import { extractAcoupPost } from './wp-acoup';
+import { extractAcoupPost, extractAcoupHomepage } from './wp-acoup';
 import { sanitizeToKindle } from './sanitize';
 import { toAbsoluteUrls, rewriteImages } from './kindle';
 
@@ -28,14 +28,19 @@ export async function renderRouteHandler(req: Request, res: Response) {
 
     clearTimeout(timeout);
 
-    const extracted = extractAcoupPost(html, rawUrl);
+    const isHomepage = new URL(rawUrl).origin + '/' === new URL(rawUrl).href;
+
+    const extracted = isHomepage
+      ? await extractAcoupHomepage(rawUrl)
+      : extractAcoupPost(html, rawUrl);
+
     if (!extracted.contentHtml || extracted.contentHtml.trim().length === 0) {
       return sendHtml(res.status(422), renderError('Failed to extract article content.'));
     }
 
     // 1) Rewrite images (lazy-load, non-webp, unwrap figure/picture)
     let processed = rewriteImages(extracted.contentHtml, { allowImages: images !== 'off' });
-    // 2) Absolutize URLs
+    // 2) Absolutize URLs, and rewrite acoup links to this app
     processed = toAbsoluteUrls(processed, rawUrl);
     // 3) Sanitize last
     processed = sanitizeToKindle(processed);
